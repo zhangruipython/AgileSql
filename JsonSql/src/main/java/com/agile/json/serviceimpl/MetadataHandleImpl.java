@@ -8,7 +8,6 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 
-import static java.util.Objects.requireNonNull;
 
 /** 处理 metadata 生成建表语句和数据插入语句
  * @author 张睿
@@ -17,12 +16,16 @@ import static java.util.Objects.requireNonNull;
 public class MetadataHandleImpl {
     private final List<Metadata> metadataList;
     private final String tableName;
-
-    public MetadataHandleImpl(List<Metadata> metadataList,String tableName) {
-        requireNonNull(metadataList,"metadataList is null");
-        requireNonNull(tableName,"table name is null");
-        this.metadataList = metadataList;
-        this.tableName = tableName;
+    private MetadataHandleImpl(MetadataHandleBuild metadataHandleBuild){
+        this.metadataList = metadataHandleBuild.metadataList;
+        this.tableName=metadataHandleBuild.tableName;
+    }
+    public static class MetadataHandleBuild{
+        private List<Metadata> metadataList;
+        private String tableName;
+        public MetadataHandleBuild setMetadataList(List<Metadata> metadataList){this.metadataList=metadataList;return this;}
+        public MetadataHandleBuild setTableName(String tableName){this.tableName=tableName;return this;}
+        public MetadataHandleImpl build(){return new MetadataHandleImpl(this);}
     }
 
     public List<String> generateSql(){
@@ -42,7 +45,7 @@ public class MetadataHandleImpl {
     public void prepareInsertSql(PreparedStatement preparedStatement, JSONObject insertData) throws SQLException {
         int i = 1;
         for (Metadata metadata:metadataList){
-            String name = metadata.getName();
+            String name = metadata.getFieldName();
             String fieldType = metadata.getType();
             switch (fieldType){
                 case "varchar":
