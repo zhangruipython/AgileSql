@@ -93,7 +93,9 @@ AgileSql是一个maven项目，执行以下命令将AgileSql添加至您maven项
 - data：具体json内容
 - sqlContent：执行sql语句
 
-**接口案例 ** <https://github.com/zhangruipython/AgileSql/blob/master/JsonSql/src/test/java/com/agile/json/JsonDataTest.java> 
+**接口案例**
+
+<https://github.com/zhangruipython/AgileSql/blob/master/JsonSql/src/test/java/com/agile/json/JsonDataTest.java> 
 
 
 
