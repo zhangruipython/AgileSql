@@ -7,5 +7,5 @@ package com.agile.json.service;
  * @create: 2020-08-07 16:56
  **/
 public interface JsonDbHandle {
-    public abstract void JsonDb(String parameter);
+    public abstract String JsonDb(String parameter);
 }

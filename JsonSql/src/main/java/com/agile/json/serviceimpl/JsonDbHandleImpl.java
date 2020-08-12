@@ -7,7 +7,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
 
-import java.sql.PreparedStatement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -18,22 +18,22 @@ import java.util.concurrent.CountDownLatch;
  * @author: 张睿
  * @create: 2020-08-07 16:59
  **/
-public class JsonDbHandleImpl implements JsonDbHandle,Runnable {
-    private final PreparedStatement insertPrep;
-    private final CountDownLatch countDownLatch;
+public class JsonDbHandleImpl implements JsonDbHandle {
+    private final Connection conn;
 
-
-    public JsonDbHandleImpl(PreparedStatement insertPrep, CountDownLatch countDownLatch, MetadataHandleImpl metadataHandleImpl) {
-        this.insertPrep = insertPrep;
-        this.countDownLatch = countDownLatch;
+    public JsonDbHandleImpl(Connection conn) {
+        this.conn = conn;
     }
 
     @Override
-    public void JsonDb(String data) {
+    public String JsonDb(String data) {
+        String queryData = null;
         JSONObject dataJson = JSON.parseObject(data);
         JSONArray metadataJson = (JSONArray) dataJson.get("metadata");
         JSONArray dataInfoJson = (JSONArray) dataJson.get("data");
         String tableName = (String) dataJson.get("tableName");
+        String sqlContent = (String) dataJson.get("sqlContent");
+
         List<Metadata> metadataList = new ArrayList<>();
         for (Object o:metadataJson){
             JSONObject var = (JSONObject) o;
@@ -42,22 +42,30 @@ public class JsonDbHandleImpl implements JsonDbHandle,Runnable {
         }
         MetadataHandleImpl metadataHandle = new MetadataHandleImpl.MetadataHandleBuild().setMetadataList(metadataList).setTableName(tableName).build();
         List<String> allSql = metadataHandle.generateSql();
-
-
-    }
-
-    /**
-     * When an object implementing interface <code>Runnable</code> is used
-     * to create a thread, starting the thread causes the object's
-     * <code>run</code> method to be called in that separately executing
-     * thread.
-     * <p>
-     * The general contract of the method <code>run</code> is that it may
-     * take any action whatsoever.
-     *
-     * @see Thread#run()
-     */
-    @Override
-    public void run() {
+        try (Statement sqlStatement = conn.createStatement();){
+            // 执行建表语句
+            sqlStatement.executeUpdate(allSql.get(0));
+            // 插入数据
+            PreparedStatement insertPreparedStatement =conn.prepareStatement(allSql.get(1));
+            int i =1;
+           for (Object dataObj:dataInfoJson){
+               JSONObject dataJsonObject = (JSONObject) dataObj;
+               metadataHandle.prepareInsertSql(insertPreparedStatement,dataJsonObject);
+               insertPreparedStatement.addBatch();
+               if (i % 1000 == 0) {
+                   insertPreparedStatement.executeBatch();
+                   insertPreparedStatement.clearBatch();
+               }
+               i++;
+           }
+            insertPreparedStatement.executeBatch();
+           ResultSet querySet = sqlStatement.executeQuery(sqlContent);
+           ResultSetHandleImpl resultSetHandle = new ResultSetHandleImpl();
+           queryData = resultSetHandle.handle(querySet);
+            insertPreparedStatement.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return queryData;
     }
 }
