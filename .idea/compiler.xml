@@ -7,10 +7,14 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="JsonSql" />
+        <module name="ParquetSql" />
+        <module name="LocalFileSql" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="JsonSql" target="1.8" />
+      <module name="LocalFileSql" target="1.8" />
+      <module name="ParquetSql" target="1.8" />
     </bytecodeTargetLevel>
   </component>
 </project>

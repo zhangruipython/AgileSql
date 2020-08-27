@@ -8,6 +8,7 @@
       <list>
         <option value="$PROJECT_DIR$/JsonSql/pom.xml" />
         <option value="$PROJECT_DIR$/LocalFileSql/pom.xml" />
+        <option value="$PROJECT_DIR$/ParquetSql/pom.xml" />
       </list>
     </option>
   </component>

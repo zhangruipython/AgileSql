@@ -5,6 +5,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/AgileSql.iml" filepath="$PROJECT_DIR$/.idea/AgileSql.iml" />
       <module fileurl="file://$PROJECT_DIR$/JsonSql/JsonSql.iml" filepath="$PROJECT_DIR$/JsonSql/JsonSql.iml" />
       <module fileurl="file://$PROJECT_DIR$/LocalFileSql/LocalFileSql.iml" filepath="$PROJECT_DIR$/LocalFileSql/LocalFileSql.iml" />
+      <module fileurl="file://$PROJECT_DIR$/ParquetSql/ParquetSql.iml" filepath="$PROJECT_DIR$/ParquetSql/ParquetSql.iml" />
     </modules>
   </component>
 </project>
