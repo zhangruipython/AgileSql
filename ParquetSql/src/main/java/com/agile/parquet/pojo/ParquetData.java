@@ -9,18 +9,11 @@ import java.util.List;
  * @create: 2020-09-04 14:08
  **/
 public class ParquetData {
-    private String parquetName;
     private List<String> columnNames;
     private List<String> columnTypes;
     private List<List<Object[]>> allColumnData;
 
-    public String getParquetName() {
-        return parquetName;
-    }
 
-    public void setParquetName(String parquetName) {
-        this.parquetName = parquetName;
-    }
 
     public List<String> getColumnNames() {
         return columnNames;

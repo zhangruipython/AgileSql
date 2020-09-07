@@ -3,6 +3,7 @@ package com.agile.parquet.serviceImpl;
 
 import com.agile.parquet.pojo.ParquetData;
 import com.agile.parquet.service.ParquetDBHandle;
+import com.agile.parquet.util.CreateDataConn;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.hadoop.conf.Configuration;
@@ -18,6 +19,7 @@ import org.apache.parquet.io.ColumnIOFactory;
 import org.apache.parquet.io.MessageColumnIO;
 import org.apache.parquet.io.RecordReader;
 import org.apache.parquet.schema.MessageType;
+import org.sqlite.SQLiteDataSource;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -26,6 +28,7 @@ import java.nio.file.Paths;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -54,7 +57,7 @@ public class ParquetDBHandleImpl implements ParquetDBHandle {
     public ParquetData readParquetFile(String filePath) throws IOException {
         ParquetFileReader reader = ParquetFileReader.open(HadoopInputFile.fromPath(new Path(filePath),new Configuration()));
         MessageType schema = reader.getFooter().getFileMetaData().getSchema();
-        String schemaName = schema.getName();
+
         // 查看数据模式 根据元数据结构得到建表语句
         List<List<String>> allColumns = new ArrayList<>();
         for (ColumnDescriptor column:schema.getColumns()){
@@ -170,7 +173,6 @@ public class ParquetDBHandleImpl implements ParquetDBHandle {
                     columnNum.add(data);
                 }
                 parquetData.add(columnNum);
-
             }
         }
 
@@ -179,16 +181,16 @@ public class ParquetDBHandleImpl implements ParquetDBHandle {
         parquetData1.setAllColumnData(parquetData);
         parquetData1.setColumnNames(columnNames);
         parquetData1.setColumnTypes(columnTypes);
-        parquetData1.setParquetName(schemaName);
         return parquetData1;
     }
     /**
     *  生成建表语句和预编译插入语句
     * @author 张睿
     * @date 2020-09-04
-    * @param [tableName, columnNames, columnTypes]
+    * @param tableName, columnNames, columnTypes
     * @return java.util.List<java.lang.String>
     */
+
 
     public List<String> generateSql(String tableName,List<String> columnNames,List<String> columnTypes){
         StringBuilder initializeCreateSql = new StringBuilder("create table " + tableName + " (");
@@ -203,11 +205,30 @@ public class ParquetDBHandleImpl implements ParquetDBHandle {
         initializeInsertSql.deleteCharAt(initializeInsertSql.length()-1).append(")");
         return Arrays.asList(initializeCreateSql.toString(),initializeInsertSql.toString());
     }
+
+    /**
+    *  预编译SQL插入数据
+    * @author 张睿
+    * @date 2020-09-07
+    * @param preparedStatement, data
+    * @return void
+    */
+
+    public void prepareInsertSql(PreparedStatement preparedStatement, List<Object[]> data) throws SQLException {
+        int b = 1;
+        for (Object[] a:data){
+//            Array sqlArray = connection.createArrayOf("array",a);
+            preparedStatement.setString(b,
+                    Arrays.toString(a));
+            b++;
+        }
+    }
+
     /**
     *  执行具体sql
     * @author 张睿
     * @date 2020-09-04
-    * @param parameter
+    * @param parquetParameter
      * {
      *     "tableName": "demo01",
      *     "sqlContent": "select count(*) from demo01;",
@@ -217,9 +238,51 @@ public class ParquetDBHandleImpl implements ParquetDBHandle {
     */
 
     @Override
-    public String ParquetDb(String parquetParameter) {
+    public String ParquetDb(String parquetParameter) throws IOException {
+        String queryData = null;
         JSONObject dataJson = JSON.parseObject(parquetParameter);
+        String tableName =(String) dataJson.get("tableName");
+        String sqlContent = (String) dataJson.get("sqlContent");
+        String parquetFile = (String) dataJson.get("parquetFile");
+        ParquetData parquetData = readParquetFile(parquetFile);
+        List<String> allSql = generateSql(tableName,parquetData.getColumnNames(),parquetData.getColumnTypes());
+        try (Statement statement = connection.createStatement();){
+            // 执行建表语句
+            statement.executeUpdate(allSql.get(0));
+            // 插入数据
+            PreparedStatement insertPreparedStatement =connection.prepareStatement(allSql.get(1));
+            int i =1;
+            for (List<Object[]> data:parquetData.getAllColumnData()) {
+                prepareInsertSql(insertPreparedStatement,data);
+                insertPreparedStatement.addBatch();
+                if (i % 1000 == 0) {
+                    insertPreparedStatement.executeBatch();
+                    insertPreparedStatement.clearBatch();
+                }
+                i++;
+            }
+            insertPreparedStatement.executeBatch();
+            ResultSet querySet = statement.executeQuery(sqlContent);
+            ResultSetHandleImpl resultSetHandle = new ResultSetHandleImpl();
+            queryData = resultSetHandle.handle(querySet);
+            insertPreparedStatement.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return queryData;
+    }
 
-        return null;
+    public static void main(String[] args) throws Exception {
+        Class.forName("org.sqlite.JDBC");
+
+        Connection connection = new CreateDataConn().createConn();
+        String a = "{\n" +
+                "    \"tableName\": \"demo01\",\n" +
+                "    \"sqlContent\": \"select * from demo01;\",\n" +
+                "    \"parquetFile\":\"D:/data/demo.parquet\"\n" +
+                "}";
+        ParquetDBHandleImpl parquetDBHandle = new ParquetDBHandleImpl(connection);
+        System.out.println(parquetDBHandle.ParquetDb(a));
+        connection.close();
     }
 }
