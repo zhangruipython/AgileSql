@@ -39,7 +39,7 @@ import java.util.stream.Stream;
  * @author: 张睿
  * @create: 2020-08-24 15:44
  **/
-public class ParquetDBHandleImpl implements ParquetDBHandle {
+public class ParquetDBHandleImpl  {
     private final Connection connection;
     public ParquetDBHandleImpl(Connection connection) {
         this.connection = connection;
@@ -217,7 +217,6 @@ public class ParquetDBHandleImpl implements ParquetDBHandle {
     public void prepareInsertSql(PreparedStatement preparedStatement, List<Object[]> data) throws SQLException {
         int b = 1;
         for (Object[] a:data){
-//            Array sqlArray = connection.createArrayOf("array",a);
             preparedStatement.setString(b,
                     Arrays.toString(a));
             b++;
@@ -237,15 +236,11 @@ public class ParquetDBHandleImpl implements ParquetDBHandle {
     * @return java.lang.String
     */
 
-    @Override
-    public String ParquetDb(String parquetParameter) throws IOException {
-        String queryData = null;
-        JSONObject dataJson = JSON.parseObject(parquetParameter);
-        String tableName =(String) dataJson.get("tableName");
-        String sqlContent = (String) dataJson.get("sqlContent");
-        String parquetFile = (String) dataJson.get("parquetFile");
-        ParquetData parquetData = readParquetFile(parquetFile);
-        List<String> allSql = generateSql(tableName,parquetData.getColumnNames(),parquetData.getColumnTypes());
+
+    public String ParquetDb(String parquetFilePath,String tempTableName,String sqlContent) throws IOException {
+        String queryData=null;
+        ParquetData parquetData = readParquetFile(parquetFilePath);
+        List<String> allSql = generateSql(tempTableName,parquetData.getColumnNames(),parquetData.getColumnTypes());
         try (Statement statement = connection.createStatement();){
             // 执行建表语句
             statement.executeUpdate(allSql.get(0));
@@ -272,6 +267,7 @@ public class ParquetDBHandleImpl implements ParquetDBHandle {
         return queryData;
     }
 
+
     public static void main(String[] args) throws Exception {
         Class.forName("org.sqlite.JDBC");
 
@@ -282,7 +278,6 @@ public class ParquetDBHandleImpl implements ParquetDBHandle {
                 "    \"parquetFile\":\"D:/data/demo.parquet\"\n" +
                 "}";
         ParquetDBHandleImpl parquetDBHandle = new ParquetDBHandleImpl(connection);
-        System.out.println(parquetDBHandle.ParquetDb(a));
         connection.close();
     }
 }
