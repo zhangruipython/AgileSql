@@ -97,7 +97,52 @@ AgileSql是一个maven项目，执行以下命令将AgileSql添加至您maven项
 
 <https://github.com/zhangruipython/AgileSql/blob/master/JsonSql/src/test/java/com/agile/json/JsonDataTest.java> 
 
+----
 
+#### local file
+
+支持接受本地TXT文件，进行结构化解析，执行SQL语句
+
+**入参格式为JSON，案列如下**
+
+```
+{
+    "tableName": "demo01",
+    "sqlContent": "select count(*) from demo01;",
+    "localFilePath": "D:/data/data.txt",
+    "metadata": [
+        {
+            "fieldName": "name",
+            "type": "varchar",
+            "mapping": "name"
+        },
+        {
+            "fieldName": "id",
+            "type": "int",
+            "mapping": "id"
+        }
+    ]
+}
+```
+
+- tableName ：表明执行sql表名称
+- metadata： local file 数据元数据
+- localFilePath：local file 路径
+- sqlContent：执行sql语句
+
+**接口使用案例**
+
+https://github.com/zhangruipython/AgileSql/blob/master/LocalFileSql/src/test/java/com/agile/LocalFileDataTest.java
+
+----
+
+### parquet file
+
+支持接受parquet 格式存储数据，进行结构化解析，执行SQL语句
+
+**接口使用案例**
+
+https://github.com/zhangruipython/AgileSql/blob/master/LocalFileSql/src/test/java/com/agile/LocalFileDataTest.java
 
 
 
