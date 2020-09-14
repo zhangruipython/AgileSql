@@ -83,10 +83,4 @@ public class ExecuteSql {
 
     }
 
-    public static void main(String[] args) {
-        ExecuteSql executeSql = new ExecuteSqlConf().setSqlContent("select * from demo01;")
-                .setParquetFilePath("D:/data/demo.parquet").setTempTableName("demo01").build();
-        String data = executeSql.execute();
-        executeSql.show(data);
-    }
 }
